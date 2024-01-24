@@ -215,9 +215,11 @@ export default function Timer() {
 
       <footer className="flex flex-col text-center gap-5">
         <section
-          className={clsx("flex flex-row flex-wrap gap-4 mx-auto p-4", {
-            invisible: isRunning,
-          })}
+          className={clsx(
+            "flex flex-row flex-wrap gap-4 mx-auto p-4",
+            "hidden md:flex",
+            { invisible: isRunning }
+          )}
         >
           <div className="flex items-center gap-2">
             <kbd className="kbd kbd-xs">▲ ▼</kbd>
