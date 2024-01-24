@@ -206,13 +206,8 @@ export default function Timer() {
         className="p-10 flex flex-row flex-wrap gap-4 mx-auto text-sm"
       >
         <div className="flex items-center gap-2">
-          <kbd className="kbd kbd-xs">▲</kbd>
-          <span className="text-xs">+1 min</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <kbd className="kbd kbd-xs">▼</kbd>
-          <span className="text-xs">-1 min</span>
+          <kbd className="kbd kbd-xs">▲ ▼</kbd>
+          <span className="text-xs">±1 min</span>
         </div>
 
         <div className="flex items-center gap-2">
