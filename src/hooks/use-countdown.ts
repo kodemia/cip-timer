@@ -5,11 +5,11 @@ interface Countdown {
   pause: () => void;
   start: () => void;
   reset: () => void;
-  getIsRunning: () => boolean;
   setSeconds: Dispatch<SetStateAction<number>>;
+  isRunning: boolean;
 }
 
-interface CountdownOptions {
+interface CountdownConfig {
   interval?: number;
   onEnd?: () => void;
   onPause?: () => void;
@@ -20,22 +20,19 @@ interface CountdownOptions {
 
 export function useCountdown(
   initialCountdown: number,
-  {
-    interval = 1000,
-    onEnd,
-    onPause,
-    onReset,
-    onTick,
-    onStart,
-  }: CountdownOptions = {}
+  config: CountdownConfig
 ): Countdown {
+  const { interval = 1000, onEnd, onPause, onReset, onTick, onStart } = config;
   const [seconds, setSeconds] = useState(initialCountdown);
+  const [initialSeconds, setInitialSeconds] = useState(initialCountdown);
+  const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<number | null>();
 
   function pause() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+      setIsRunning(false);
       onPause && onPause();
     }
   }
@@ -43,14 +40,19 @@ export function useCountdown(
   function start() {
     if (intervalRef.current) return;
 
+    setInitialSeconds(seconds);
+    setIsRunning(true);
+
     const id = setInterval(() => {
       setSeconds((prev) => {
         if (prev <= 0) {
           clearInterval(id);
           intervalRef.current = null;
+          setIsRunning(false);
           onEnd && onEnd();
           return 0;
         }
+
         const next = prev - 1;
         onTick && onTick(prev, next);
         return next;
@@ -62,7 +64,8 @@ export function useCountdown(
   }
 
   function reset() {
-    setSeconds(0);
+    setSeconds(initialSeconds);
+    setIsRunning(false);
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -72,9 +75,5 @@ export function useCountdown(
     onReset && onReset();
   }
 
-  function getIsRunning() {
-    return !!intervalRef.current;
-  }
-
-  return { seconds, pause, start, getIsRunning, setSeconds, reset };
+  return { seconds, pause, start, setSeconds, reset, isRunning };
 }

@@ -10,76 +10,79 @@ import {
 } from "lucide-react";
 
 const MINUTE = 60;
+const SECOND = 1;
+const MAX_TIME = MINUTE * 99;
+const MIN_TIME = 0;
 const initialSeconds = 5 * MINUTE;
 
-function beep() {
-  const snd = new Audio("notification.wav");
-  snd.play();
-}
+const notificationSound = new Audio("notification.wav");
 
 export default function Timer() {
-  const [isRunning, setIsRunning] = useState(false);
   const [showDone, setShowDone] = useState(false);
-  const { seconds, start, pause, getIsRunning, setSeconds, reset } =
-    useCountdown(initialSeconds, {
-      onStart: () => setIsRunning(true),
-      onPause: () => setIsRunning(false),
-      onReset: () => setIsRunning(false),
+  const { seconds, start, pause, setSeconds, reset, isRunning } = useCountdown(
+    initialSeconds,
+    {
       onEnd: () => {
-        setIsRunning(false);
         setShowDone(true);
         setTimeout(() => setShowDone(false), 2 * 1000);
-        beep();
+        notificationSound.play();
       },
-    });
+    }
+  );
 
   const minutes = Math.floor(seconds / MINUTE)
     .toString()
     .padStart(2, "0");
   const secondsLeft = (seconds % MINUTE).toString().padStart(2, "0");
 
-  function addMinute() {
+  function addTime(secondsToAdd: number) {
+    if (isRunning) return;
+
     setSeconds((seconds) => {
-      if (seconds >= MINUTE * 99) return seconds;
-      return seconds + MINUTE;
+      const newSeconds = seconds + secondsToAdd;
+      return newSeconds >= MAX_TIME ? MAX_TIME : newSeconds;
     });
   }
 
-  function removeMinute() {
+  function reduceTime(secondsToSubtract: number) {
+    if (isRunning) return;
+
     setSeconds((seconds) => {
-      if (seconds <= 0) return seconds;
-      return seconds - MINUTE;
+      const newSeconds = seconds - secondsToSubtract;
+      return newSeconds <= MIN_TIME ? MIN_TIME : newSeconds;
     });
+  }
+
+  function startStop() {
+    if (isRunning) return pause();
+    start();
   }
 
   useEffect(() => {
     const commands = {
       start: {
         keys: ["Enter", " "],
-        handler: () => {
-          if (getIsRunning()) return pause();
-          start();
-        },
+        handler: startStop,
       },
       reset: {
-        keys: ["Escape"],
-        handler: () => reset(),
+        keys: ["Escape", "r", "Backspace", "Delete"],
+        handler: reset,
       },
       addMinute: {
         keys: ["ArrowUp", "+"],
-        handler: () => {
-          if (!getIsRunning()) addMinute();
-        },
+        handler: () => addTime(MINUTE),
       },
       removeMinute: {
         keys: ["ArrowDown", "-"],
-        handler: () => {
-          if (!getIsRunning()) removeMinute();
-        },
+        handler: () => reduceTime(MINUTE),
       },
       playSound: {
         keys: ["b"],
-        handler: () => beep(),
+        handler: () => notificationSound.play(),
+      },
+      zero: {
+        keys: ["0"],
+        handler: () => setSeconds(0),
       },
       oneMinute: {
         keys: ["1"],
@@ -97,6 +100,18 @@ export default function Timer() {
         keys: ["4"],
         handler: () => setSeconds(MINUTE * 15),
       },
+      addFiveMinutes: {
+        keys: ["5"],
+        handler: () => addTime(MINUTE * 5),
+      },
+      addSecond: {
+        keys: [".", "ArrowRight"],
+        handler: () => addTime(SECOND),
+      },
+      removeSecond: {
+        keys: [",", "ArrowLeft"],
+        handler: () => reduceTime(SECOND),
+      },
     };
 
     function commandHandler(event: KeyboardEvent) {
@@ -110,15 +125,20 @@ export default function Timer() {
     window.addEventListener("keydown", commandHandler);
 
     return () => window.removeEventListener("keydown", commandHandler);
-  }, []);
+  }, [isRunning]);
 
   useEffect(() => {
     document.title = `Timer: ${minutes}:${secondsLeft}`;
   }, [minutes, secondsLeft]);
 
   return (
-    <main className="min-h-dvh flex flex-col justify-between antialiased">
-      <header className="p-10 flex flex-row flex-wrap gap-4 mx-auto text-sm justify-around">
+    <main className="min-h-dvh flex flex-col justify-between antialiased pt-10">
+      <header
+        className={clsx(
+          "flex flex-row flex-wrap gap-4 mx-auto text-sm justify-around",
+          { invisible: isRunning }
+        )}
+      >
         <div className="btn btn-ghost" onClick={() => setSeconds(MINUTE)}>
           <kbd className="kbd kbd-xs mr-2">1</kbd>
           <span className="text-xs">1 min</span>
@@ -143,18 +163,18 @@ export default function Timer() {
       <section className="flex flex-col gap-28 items-center justify-center">
         <div className="grid grid-cols-2 gap-8">
           <div
-            onClick={() => removeMinute()}
+            onClick={() => reduceTime(MINUTE)}
             className={clsx("btn btn-ghost btn-lg cursor-pointer", {
-              invisible: getIsRunning(),
+              invisible: isRunning,
             })}
           >
             <MinusIcon className="w-6 h-6" />
           </div>
 
           <div
-            onClick={() => addMinute()}
+            onClick={() => addTime(MINUTE)}
             className={clsx("btn btn-ghost btn-lg cursor-pointer", {
-              invisible: getIsRunning(),
+              invisible: isRunning,
             })}
           >
             <PlusIcon className="w-6 h-6" />
@@ -163,62 +183,70 @@ export default function Timer() {
 
         <div
           className={clsx(
-            "grid grid-flow-col gap-5 text-center auto-cols-max ",
+            "grid grid-flow-col gap-5 auto-cols-max select-none",
+            "text-5xl",
             { "animate-ping": showDone }
           )}
         >
-          <div className="flex flex-col">
-            <span className="font-sans text-2xl">
-              <span>{minutes}</span>
-            </span>
-          </div>
-          <span className="text-2xl">:</span>
-          <div className="flex flex-col">
-            <span className="font-sans text-2xl">
-              <span>{secondsLeft}</span>
-            </span>
-          </div>
+          {minutes}:{secondsLeft}
         </div>
 
         <div className="grid grid-cols-2 gap-8">
           <div
-            className={clsx("btn btn-ghost btn-lg cursor-pointer")}
-            onClick={() => reset()}
+            className={clsx("btn btn-ghost btn-lg cursor-pointer", {
+              hidden: isRunning,
+            })}
+            onClick={reset}
           >
             <UndoIcon className="w-6 h-6" />
           </div>
 
           <div
-            className="btn btn-ghost btn-lg cursor-pointer"
-            onClick={() => (getIsRunning() ? pause() : start())}
+            className={clsx("btn btn-ghost btn-lg cursor-pointer mx-auto", {
+              "col-span-2": isRunning,
+            })}
+            onClick={startStop}
           >
-            {isRunning ? (
-              <PauseIcon className="w-6 h-6" />
-            ) : (
-              <PlayIcon className="w-6 h-6" />
-            )}
+            {isRunning && <PauseIcon className="w-6 h-6" />}
+            {!isRunning && <PlayIcon className="w-6 h-6" />}
           </div>
         </div>
       </section>
 
-      <footer
-        // className="flex flex-row gap-10 w-full text-center text-xs *:flex *:flex-row *:gap-2 items-center justify-center lg:px-20 py-4"
-        className="p-10 flex flex-row flex-wrap gap-4 mx-auto text-sm"
-      >
-        <div className="flex items-center gap-2">
-          <kbd className="kbd kbd-xs">▲ ▼</kbd>
-          <span className="text-xs">±1 min</span>
-        </div>
+      <footer className="flex flex-col text-center gap-5">
+        <section
+          className={clsx("flex flex-row flex-wrap gap-4 mx-auto p-4", {
+            invisible: isRunning,
+          })}
+        >
+          <div className="flex items-center gap-2">
+            <kbd className="kbd kbd-xs">▲ ▼</kbd>
+            <span className="text-xs">±1 min</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="kbd kbd-xs">enter</kbd>
+            <span className="text-xs">start/stop</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="kbd kbd-xs">esc</kbd>
+            <span className="text-xs">reset</span>
+          </div>
+        </section>
 
-        <div className="flex items-center gap-2">
-          <kbd className="kbd kbd-xs">enter</kbd>
-          <span className="text-xs">start/stop</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <kbd className="kbd kbd-xs">esc</kbd>
-          <span className="text-xs">reset</span>
-        </div>
+        <section className="text-xs flex flex-row items-center justify-center border-t border-secondary p-4">
+          <a
+            href="https://kodemia.mx"
+            target="__blank"
+            className="flex flex-col sm:flex-row justify-center items-center gap-2"
+          >
+            Una herramienta creada por
+            <img
+              src="https://cdn.kodemia.mx/images/brand/white-imagotipo.svg"
+              className="h-6"
+              alt=""
+            />
+          </a>
+        </section>
       </footer>
     </main>
   );
