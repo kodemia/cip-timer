@@ -85,24 +85,16 @@ export default function Timer() {
         keys: ["1"],
         handler: () => setSeconds(MINUTE),
       },
-      threeMinutes: {
-        keys: ["2"],
-        handler: () => setSeconds(MINUTE * 3),
-      },
       fiveMinutes: {
-        keys: ["3"],
+        keys: ["2"],
         handler: () => setSeconds(MINUTE * 5),
       },
-      sevenMinutes: {
-        keys: ["4"],
-        handler: () => setSeconds(MINUTE * 7),
-      },
       tenMinutes: {
-        keys: ["5"],
+        keys: ["3"],
         handler: () => setSeconds(MINUTE * 10),
       },
       fifteenMinutes: {
-        keys: ["6"],
+        keys: ["4"],
         handler: () => setSeconds(MINUTE * 15),
       },
     };
@@ -126,37 +118,28 @@ export default function Timer() {
 
   return (
     <main className="min-h-dvh flex flex-col justify-between antialiased">
-      <header className="p-10 flex flex-row flex-wrap gap-4 mx-auto text-sm">
-        <div className="btn btn-ghost">
+      <header className="p-10 flex flex-row flex-wrap gap-4 mx-auto text-sm justify-around">
+        <div className="btn btn-ghost" onClick={() => setSeconds(MINUTE)}>
           <kbd className="kbd kbd-xs mr-2">1</kbd>
           <span className="text-xs">1 min</span>
         </div>
 
-        <div className="btn btn-ghost">
+        <div className="btn btn-ghost" onClick={() => setSeconds(MINUTE * 5)}>
           <kbd className="kbd kbd-xs mr-2">2</kbd>
-          <span className="text-xs">3 min</span>
-        </div>
-
-        <div className="btn btn-ghost">
-          <kbd className="kbd kbd-xs mr-2">3</kbd>
           <span className="text-xs">5 min</span>
         </div>
 
-        <div className="btn btn-ghost">
-          <kbd className="kbd kbd-xs mr-2">4</kbd>
-          <span className="text-xs">7 min</span>
-        </div>
-
-        <div className="btn btn-ghost">
-          <kbd className="kbd kbd-xs mr-2">5</kbd>
+        <div className="btn btn-ghost" onClick={() => setSeconds(MINUTE * 10)}>
+          <kbd className="kbd kbd-xs mr-2">3</kbd>
           <span className="text-xs">10 min</span>
         </div>
 
-        <div className="btn btn-ghost">
-          <kbd className="kbd kbd-xs mr-2">6</kbd>
+        <div className="btn btn-ghost" onClick={() => setSeconds(MINUTE * 15)}>
+          <kbd className="kbd kbd-xs mr-2">4</kbd>
           <span className="text-xs">15 min</span>
         </div>
       </header>
+
       <section className="flex flex-col gap-28 items-center justify-center">
         <div className="grid grid-cols-2 gap-8">
           <div
